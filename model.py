@@ -6,20 +6,20 @@ from keras.layers import Input, Flatten, Dense
 from keras.layers.convolutional import Convolution2D
 from keras.models import Model
 
-def process_line(line):
+def process_line(line, path):
     tokens = line.split(',')
-    img = mpimg.imread(tokens[0])
+    img = mpimg.imread(path + tokens[0])
     angle = float(tokens[3])
     return img, angle
 
 def generate_batch_from_file(path, batch_size, input_shape):
     while 1:
-        f = open(path)
+        f = open(path + '/driving_log.csv.relative')
         i = 0
         input_batch = np.empty((batch_size, input_shape[0], input_shape[1], input_shape[2]))
         output_batch = np.empty(batch_size)
         for line in f:
-            img, angle = process_line(line)
+            img, angle = process_line(line, path)
             
             input_batch[i] = (np.asarray(img) - 127.0) / 255.0 # Normalize the image
             output_batch[i] = angle
@@ -36,8 +36,8 @@ flags = tf.app.flags
 FLAGS = flags.FLAGS
 
 # command line flags
-flags.DEFINE_string('training_file', 'training/driving_log.csv', "Features training file (.csv)")
-flags.DEFINE_string('validation_file', 'validation/driving_log.csv', "Features validation file (.csv)")
+flags.DEFINE_string('training_file', 'training', "Features training file (.csv)")
+flags.DEFINE_string('validation_file', 'validation', "Features validation file (.csv)")
 flags.DEFINE_integer('epochs', 5, "The number of epochs.")
 flags.DEFINE_integer('batch_size', 256, "The batch size.")
 
