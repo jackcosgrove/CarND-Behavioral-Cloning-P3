@@ -1,6 +1,7 @@
 import tensorflow as tf
 import numpy as np
 import matplotlib.image as mpimg
+import cv2
 from keras.models import Sequential
 from keras.layers import Input, Flatten, Dense
 from keras.layers.convolutional import Convolution2D
@@ -10,6 +11,7 @@ from keras.optimizers import Adam
 def process_line(line, path):
     tokens = line.split(',')
     img = mpimg.imread(path + tokens[0])
+    img = cv2.resize(img, (0,0), fx=0.5, fy=0.5)
     angle = float(tokens[3])
     return img, angle
 
