@@ -9,7 +9,7 @@ def process_line(line):
 
 file_name = sys.argv[1]
 r = open(file_name, 'r')
-w = open(file_name + '.relative', ‘a’)
+w = open(file_name + '.relative', 'a')
 for line in r:
     w.write(process_line(line))
 r.close()
