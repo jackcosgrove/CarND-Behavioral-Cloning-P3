@@ -44,6 +44,7 @@ flags.DEFINE_string('validation_file', 'validation', "Features validation file (
 flags.DEFINE_integer('epochs', 5, "The number of epochs.")
 flags.DEFINE_integer('batch_size', 128, "The batch size.")
 flags.DEFINE_float('learning_rate', 0.001, "The learning rate.")
+flags.DEFINE_integer('batch_multiple', 30, "The batch multiple.")
 
 def main(_):
     
@@ -71,7 +72,7 @@ def main(_):
     model.compile(optimizer=adam, loss='mean_squared_error', metrics=['accuracy'])
     
     model.fit_generator(generate_batch_from_file(FLAGS.training_file, FLAGS.batch_size, input_shape),
-                        samples_per_epoch=FLAGS.batch_size * 70, nb_epoch=FLAGS.epochs)#,
+                        samples_per_epoch=FLAGS.batch_size * FLAGS.batch_multiple, nb_epoch=FLAGS.epochs)#,
 #validation_data=generate_arrays_from_file(FLAGS.validation_file))
 
 # parses flags and calls the `main` function above
