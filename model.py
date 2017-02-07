@@ -39,7 +39,7 @@ FLAGS = flags.FLAGS
 flags.DEFINE_string('training_file', 'training', "Features training file (.csv)")
 flags.DEFINE_string('validation_file', 'validation', "Features validation file (.csv)")
 flags.DEFINE_integer('epochs', 5, "The number of epochs.")
-flags.DEFINE_integer('batch_size', 256, "The batch size.")
+flags.DEFINE_integer('batch_size', 128, "The batch size.")
 
 
 def main(_):
