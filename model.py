@@ -5,6 +5,7 @@ from keras.models import Sequential
 from keras.layers import Input, Flatten, Dense
 from keras.layers.convolutional import Convolution2D
 from keras.models import Model
+from keras.optimizers import Adam
 
 def process_line(line, path):
     tokens = line.split(',')
@@ -22,7 +23,7 @@ def generate_batch_from_file(path, batch_size, input_shape):
             img, angle = process_line(line, path)
             
             input_batch[i] = (np.asarray(img) - 127.0) / 255.0 # Normalize the image
-            output_batch[i] = angle
+            output_batch[i] = angle 
     
             if (i == batch_size-1):
                 yield (input_batch, output_batch)
@@ -39,8 +40,8 @@ FLAGS = flags.FLAGS
 flags.DEFINE_string('training_file', 'training', "Features training file (.csv)")
 flags.DEFINE_string('validation_file', 'validation', "Features validation file (.csv)")
 flags.DEFINE_integer('epochs', 5, "The number of epochs.")
-flags.DEFINE_integer('batch_size', 256, "The batch size.")
-
+flags.DEFINE_integer('batch_size', 128, "The batch size.")
+flags.DEFINE_float('learning_rate', 0.001, "The learning rate.")
 
 def main(_):
     
@@ -55,7 +56,8 @@ def main(_):
     model.add(Convolution2D(36, 5, 5, border_mode='valid'))
     model.add(Convolution2D(48, 5, 5, border_mode='valid'))
     model.add(Convolution2D(64, 3, 3, border_mode='valid'))
-    
+#    model.add(Convolution2D(48, 3, 3, border_mode='valid'))
+
     model.add(Flatten())
     
     model.add(Dense(100, activation='relu'))
@@ -63,10 +65,11 @@ def main(_):
     model.add(Dense(10, activation='relu'))
     model.add(Dense(1, activation='linear'))
     
-    model.compile(optimizer='adam', loss='mean_squared_error', metrics=['accuracy'])
+    adam = Adam(lr=FLAGS.learning_rate)
+    model.compile(optimizer=adam, loss='mean_squared_error', metrics=['accuracy'])
     
     model.fit_generator(generate_batch_from_file(FLAGS.training_file, FLAGS.batch_size, input_shape),
-                        samples_per_epoch=FLAGS.batch_size * 10, nb_epoch=FLAGS.epochs)#,
+                        samples_per_epoch=FLAGS.batch_size * 70, nb_epoch=FLAGS.epochs)#,
 #validation_data=generate_arrays_from_file(FLAGS.validation_file))
 
 # parses flags and calls the `main` function above
