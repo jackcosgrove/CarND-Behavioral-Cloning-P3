@@ -41,11 +41,7 @@ flags.DEFINE_string('training_file', 'training', "Features training file (.csv)"
 flags.DEFINE_string('validation_file', 'validation', "Features validation file (.csv)")
 flags.DEFINE_integer('epochs', 5, "The number of epochs.")
 flags.DEFINE_integer('batch_size', 128, "The batch size.")
-<<<<<<< HEAD
-
-=======
 flags.DEFINE_float('learning_rate', 0.001, "The learning rate.")
->>>>>>> da63a59c9d68d92c829415d0395eca57bf933407
 
 def main(_):
     
