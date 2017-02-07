@@ -10,21 +10,26 @@ from keras.optimizers import Adam
 
 def process_line(line, path):
     tokens = line.split(',')
-    img = mpimg.imread(path + tokens[0])
-    img = cv2.resize(img, (0,0), fx=0.5, fy=0.5)
-    angle = float(tokens[3])
+    center = mpimg.imread(path + tokens[0].strip())
+    left = mpimg.imread(path + tokens[1].strip())
+    right = mpimg.imread(path + tokens[2].strip())
+    center = cv2.resize(center, (64,64))
+    left = cv2.resize(left, (64,64))
+    right = cv2.resize(right, (64,64))
+    img = np.concatenate((left, center, right), axis = 1)
+    angle = float(tokens[3].strip())
     return img, angle
 
 def generate_batch_from_file(path, batch_size, input_shape):
     while 1:
-        f = open(path + '/driving_log.csv.relative')
+        f = open(path + '/driving_log.csv')
         i = 0
         input_batch = np.empty((batch_size, input_shape[0], input_shape[1], input_shape[2]))
         output_batch = np.empty(batch_size)
         for line in f:
             img, angle = process_line(line, path)
             
-            input_batch[i] = (np.asarray(img) - 127.0) / 255.0 # Normalize the image
+            input_batch[i] = (img - 127.0) / 255.0 # Normalize the image
             output_batch[i] = angle 
     
             if (i == batch_size-1):
@@ -39,8 +44,8 @@ flags = tf.app.flags
 FLAGS = flags.FLAGS
 
 # command line flags
-flags.DEFINE_string('training_file', 'training', "Features training file (.csv)")
-flags.DEFINE_string('validation_file', 'validation', "Features validation file (.csv)")
+flags.DEFINE_string('training_file', 'training/', "Features training file (.csv)")
+flags.DEFINE_string('validation_file', 'validation/', "Features validation file (.csv)")
 flags.DEFINE_integer('epochs', 5, "The number of epochs.")
 flags.DEFINE_integer('batch_size', 128, "The batch size.")
 flags.DEFINE_float('learning_rate', 0.001, "The learning rate.")
@@ -49,7 +54,7 @@ flags.DEFINE_integer('batch_multiple', 30, "The batch multiple.")
 def main(_):
     
     # define model
-    input_shape = (80,160,3)
+    input_shape = (64,192,3)
     
     print("Input shape: ", input_shape)
     
