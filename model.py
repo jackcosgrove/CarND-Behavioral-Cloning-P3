@@ -3,7 +3,7 @@ import numpy as np
 import matplotlib.image as mpimg
 import cv2
 from keras.models import Sequential
-from keras.layers import Input, Flatten, Dense
+from keras.layers import Input, Flatten, Dense, Dropout
 from keras.layers.convolutional import Convolution2D
 from keras.models import Model
 from keras.optimizers import Adam
@@ -17,35 +17,26 @@ def process_line(line, path):
     left = cv2.resize(left, (64,64))
     right = cv2.resize(right, (64,64))
     img = (np.concatenate((left, center, right), axis = 1) - 127.0) / 255.0 # Normalize the image
-    flipped = cv2.flip(img.copy(), 0)
     angle = float(tokens[3].strip())
-    # Snap the angles to 0.05 increments
-    angle = round(angle * 20.0) / 20
-    labels = np.zeros(21)
-    labels[round((angle + 1.0) * 10.0)] = 1
-    flipped_labels = np.zeros(21)
-    flipped_labels[round((angle * -1.0 + 1.0) * 10.0)]
-    return img, flipped, labels, flipped_labels
+    return img, angle
 
 def generate_batch_from_file(path, batch_size, input_shape):
     while 1:
         f = open(path + '/driving_log.csv')
         i = 0
         input_batch = np.empty((batch_size, input_shape[0], input_shape[1], input_shape[2]))
-        output_batch = np.empty((batch_size, 21))
+        output_batch = np.empty((batch_size))
         for line in f:
-            img, flipped, labels, flipped_labels = process_line(line, path)
+            img, angle = process_line(line, path)
             
             input_batch[i] = img
-            output_batch[i] = labels
-            input_batch[i+1] = flipped
-            output_batch[i+1] = flipped_labels
+            output_batch[i] = angle
     
-            if (i == batch_size-2):
+            if (i == batch_size-1):
                 yield (input_batch, output_batch)
                 i = 0
             else:
-                i += 2
+                i += 1
     
         f.close()
 
@@ -73,16 +64,20 @@ def main(_):
     model.add(Convolution2D(36, 5, 5, border_mode='valid'))
     model.add(Convolution2D(48, 5, 5, border_mode='valid'))
     model.add(Convolution2D(64, 3, 3, border_mode='valid'))
-#    model.add(Convolution2D(48, 3, 3, border_mode='valid'))
 
     model.add(Flatten())
-    
+
+    model.add(Dropout(0.5))
+
     model.add(Dense(100, activation='relu'))
+
+    model.add(Dropout(0.8))
+
     model.add(Dense(50, activation='relu'))
-    model.add(Dense(21, activation='relu'))
+    model.add(Dense(1, activation='linear'))
     
     adam = Adam(lr=FLAGS.learning_rate)
-    model.compile(optimizer=adam, loss='categorical_crossentropy', metrics=['accuracy'])
+    model.compile(optimizer=adam, loss='mse', metrics=['accuracy'])
     
     model.fit_generator(generate_batch_from_file(FLAGS.training_file, FLAGS.batch_size, input_shape),
                         samples_per_epoch=FLAGS.batch_size * FLAGS.batch_multiple, nb_epoch=FLAGS.epochs)#,
