@@ -16,27 +16,36 @@ def process_line(line, path):
     center = cv2.resize(center, (64,64))
     left = cv2.resize(left, (64,64))
     right = cv2.resize(right, (64,64))
-    img = np.concatenate((left, center, right), axis = 1)
+    img = (np.concatenate((left, center, right), axis = 1) - 127.0) / 255.0 # Normalize the image
+    flipped = cv2.flip(img.copy(), 0)
     angle = float(tokens[3].strip())
-    return img, angle
+    # Snap the angles to 0.05 increments
+    angle = round(angle * 20.0) / 20
+    labels = np.zeros(21)
+    labels[round((angle + 1.0) * 10.0)] = 1
+    flipped_labels = np.zeros(21)
+    flipped_labels[round((angle * -1.0 + 1.0) * 10.0)]
+    return img, flipped, labels, flipped_labels
 
 def generate_batch_from_file(path, batch_size, input_shape):
     while 1:
         f = open(path + '/driving_log.csv')
         i = 0
         input_batch = np.empty((batch_size, input_shape[0], input_shape[1], input_shape[2]))
-        output_batch = np.empty(batch_size)
+        output_batch = np.empty((batch_size, 21))
         for line in f:
-            img, angle = process_line(line, path)
+            img, flipped, labels, flipped_labels = process_line(line, path)
             
-            input_batch[i] = (img - 127.0) / 255.0 # Normalize the image
-            output_batch[i] = angle 
+            input_batch[i] = img
+            output_batch[i] = labels
+            input_batch[i+1] = flipped
+            output_batch[i+1] = flipped_labels
     
-            if (i == batch_size-1):
+            if (i == batch_size-2):
                 yield (input_batch, output_batch)
                 i = 0
             else:
-                i += 1
+                i += 2
     
         f.close()
 
@@ -70,11 +79,10 @@ def main(_):
     
     model.add(Dense(100, activation='relu'))
     model.add(Dense(50, activation='relu'))
-    model.add(Dense(10, activation='relu'))
-    model.add(Dense(1, activation='linear'))
+    model.add(Dense(21, activation='relu'))
     
     adam = Adam(lr=FLAGS.learning_rate)
-    model.compile(optimizer=adam, loss='mean_squared_error', metrics=['accuracy'])
+    model.compile(optimizer=adam, loss='categorical_crossentropy', metrics=['accuracy'])
     
     model.fit_generator(generate_batch_from_file(FLAGS.training_file, FLAGS.batch_size, input_shape),
                         samples_per_epoch=FLAGS.batch_size * FLAGS.batch_multiple, nb_epoch=FLAGS.epochs)#,
