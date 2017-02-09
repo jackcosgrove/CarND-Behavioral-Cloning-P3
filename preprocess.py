@@ -1,4 +1,5 @@
 import sys
+import numpy as np
 
 def process_line(line):
     tokens = line.split(',')
@@ -7,10 +8,17 @@ def process_line(line):
     tokens[0] = file_name[start:]
     return str.join(',', tokens)
 
-file_name = sys.argv[1]
+file_name = sys.argv[1] + '/driving_log.csv'
 r = open(file_name, 'r')
-w = open(file_name + '.relative', 'a')
+t = open(file_name + '.training', 'w')
+v = open(file_name + '.validation', 'w')
+
 for line in r:
-    w.write(process_line(line))
+    i = np.random.randint(4)
+    if i == 0:
+        v.write(line)
+    else:
+        t.write(line)
 r.close()
-w.close()
+t.close()
+v.close()
