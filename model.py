@@ -73,12 +73,15 @@ def process_line(line, path, mini_batch_size, y_dim, x_dim, z_dim, angle_adjust_
     angles[1] = angle + angle_adjust_left
     angles[2] = angle + angle_adjust_right
 
-    images[3], angles[3] = translate_image(images[0].copy(),angles[0],100, y_dim, x_dim)
-    images[4], angles[4] = translate_image(images[1].copy(),angles[1],100, y_dim, x_dim)
-    images[5], angles[5] = translate_image(images[2].copy(),angles[2],100, y_dim, x_dim)
+#    images[3], angles[3] = translate_image(images[0].copy(),angles[0],100, y_dim, x_dim)
+#    images[4], angles[4] = translate_image(images[1].copy(),angles[1],100, y_dim, x_dim)
+#    images[5], angles[5] = translate_image(images[2].copy(),angles[2],100, y_dim, x_dim)
 
-    images[6] = add_random_shadow(images[0].copy(), y_dim, x_dim)
-    images[7] = add_random_shadow(images[0].copy(), y_dim, x_dim)
+    images[3] = add_random_shadow(images[0].copy(), y_dim, x_dim)
+#    images[7] = add_random_shadow(images[0].copy(), y_dim, x_dim)
+
+    angles[3] = angle
+#    angles[7] = angle
 
     for i in range(mini_batch_size):
         # Normalize the images
@@ -99,15 +102,15 @@ def generate_batch_from_file(path, file_name, batch_size, mini_batch_size, input
         for line in f:
             images, angles = process_line(line, path, mini_batch_size, input_shape[0], input_shape[1], input_shape[2])
             
-            input_batch[i:mini_batch_size] = images
-            output_batch[i:mini_batch_size] = angles
+            input_batch[i:i+mini_batch_size] = images
+            output_batch[i:i+mini_batch_size] = angles
     
-            if (i <= batch_size-mini_batch_size):
+            if (i >= batch_size-mini_batch_size):
                 yield (input_batch, output_batch)
                 i = 0
             else:
                 i += mini_batch_size
-    
+
         f.close()
 
 flags = tf.app.flags
@@ -119,7 +122,7 @@ flags.DEFINE_string('training_file', 'driving_log.csv.training', "Features train
 flags.DEFINE_string('validation_file', 'driving_log.csv.validation', "Features validation file (.csv)")
 flags.DEFINE_integer('epochs', 5, "The number of epochs.")
 flags.DEFINE_integer('batch_size', 64, "The batch size.")
-flags.DEFINE_integer('mini_batch_size', 8, "The mini batch size.")
+flags.DEFINE_integer('mini_batch_size', 4, "The mini batch size.")
 flags.DEFINE_float('learning_rate', 0.001, "The learning rate.")
 flags.DEFINE_integer('batch_multiple', 60, "The batch multiple.")
 
@@ -155,6 +158,8 @@ def main(_):
     model.fit_generator(generate_batch_from_file(FLAGS.training_path, FLAGS.training_file, FLAGS.batch_size, FLAGS.mini_batch_size, input_shape),
                         samples_per_epoch=training_samples, nb_epoch=FLAGS.epochs, nb_val_samples=training_samples/5,
                         validation_data=generate_batch_from_file(FLAGS.training_path, FLAGS.validation_file, FLAGS.batch_size, FLAGS.mini_batch_size, input_shape))
+
+    model.save('model.h5')
 
 # parses flags and calls the `main` function above
 if __name__ == '__main__':
