@@ -2,7 +2,6 @@ import tensorflow as tf
 import numpy as np
 import matplotlib.image as mpimg
 import cv2
-import math
 from keras.models import Sequential
 from keras.layers import Input, Flatten, Dense, Dropout
 from keras.layers.convolutional import Convolution2D
@@ -16,14 +15,14 @@ def augment_brightness_camera_images(image):
     image1 = cv2.cvtColor(image1,cv2.COLOR_HSV2RGB)
     return image1
 
-def translate_image(image,steer,trans_range):
+def translate_image(image,steer,trans_range, y_dim, x_dim):
     # Translation
     tr_x = trans_range*np.random.uniform()-trans_range/2
     steer_ang = steer + tr_x/trans_range*2*.2
     tr_y = 40*np.random.uniform()-40/2
     #tr_y = 0
     Trans_M = np.float32([[1,0,tr_x],[0,1,tr_y]])
-    image_tr = cv2.warpAffine(image,Trans_M,image.shape[0:2])
+    image_tr = cv2.warpAffine(image,Trans_M,(x_dim,y_dim))
     return image_tr,steer_ang
 
 def add_random_shadow(image, y_dim, x_dim):
@@ -50,42 +49,6 @@ def add_random_shadow(image, y_dim, x_dim):
 
     return image
 
-new_size_col,new_size_row = 64, 64
-
-def preprocessImage(image):
-    shape = image.shape
-    # note: numpy arrays are (row, col)!
-    image = image[math.floor(shape[0]/5):shape[0]-25, 0:shape[1]]
-    image = cv2.resize(image,(new_size_col,new_size_row), interpolation=cv2.INTER_AREA)    
-    image = image/255.-.5
-    return image
-
-def preprocess_image_file_train(line_data, path):
-    tokens = line_data.split(',')
-    i_lrc = np.random.randint(3)
-    if (i_lrc == 0):
-        path += tokens[1].strip()
-        shift_ang = .25
-    if (i_lrc == 1):
-        path += tokens[0].strip()
-        shift_ang = 0.
-    if (i_lrc == 2):
-        path += tokens[2].strip()
-        shift_ang = -.25
-    y_steer = float(tokens[3]) + shift_ang
-    image = mpimg.imread(path)
-    #image = cv2.cvtColor(image,cv2.COLOR_BGR2RGB)
-    image,y_steer = translate_image(image,y_steer,100)
-    image = augment_brightness_camera_images(image)
-    image = preprocessImage(image)
-    image = np.array(image)
-    ind_flip = np.random.randint(2)
-    if ind_flip==0:
-        image = cv2.flip(image,1)
-        y_steer = -y_steer
-
-    return image,y_steer
-
 def process_line(line, path, mini_batch_size, y_dim, x_dim, z_dim, angle_adjust_left = 0.25, angle_adjust_right = -0.25):
     tokens = line.split(',')
     center = mpimg.imread(path + tokens[0].strip())
@@ -110,15 +73,15 @@ def process_line(line, path, mini_batch_size, y_dim, x_dim, z_dim, angle_adjust_
     angles[1] = angle + angle_adjust_left
     angles[2] = angle + angle_adjust_right
 
-#    images[3], angles[3] = translate_image(images[0].copy(),angles[0],100, y_dim, x_dim)
-#    images[4], angles[4] = translate_image(images[1].copy(),angles[1],100, y_dim, x_dim)
-#    images[5], angles[5] = translate_image(images[2].copy(),angles[2],100, y_dim, x_dim)
+    images[3], angles[3] = translate_image(images[0].copy(),angles[0],100, y_dim, x_dim)
+    images[4], angles[4] = translate_image(images[1].copy(),angles[1],100, y_dim, x_dim)
+    images[5], angles[5] = translate_image(images[2].copy(),angles[2],100, y_dim, x_dim)
 
-    images[3] = add_random_shadow(images[0].copy(), y_dim, x_dim)
-#    images[7] = add_random_shadow(images[0].copy(), y_dim, x_dim)
+    images[6] = add_random_shadow(images[0].copy(), y_dim, x_dim)
+    images[7] = augment_brightness_camera_images(images[0].copy())
 
-    angles[3] = angle
-#    angles[7] = angle
+    angles[6] = angle
+    angles[7] = angle
 
     for i in range(mini_batch_size):
         # Normalize the images
@@ -130,30 +93,25 @@ def process_line(line, path, mini_batch_size, y_dim, x_dim, z_dim, angle_adjust_
     
     return images, angles
 
-def generate_batch_from_file(path, data, batch_size, input_shape):
-    input_batch = np.empty((batch_size, new_size_row, new_size_col, 3))
-    output_batch = np.empty((batch_size))
+def generate_batch_from_file(path, file_name, batch_size, mini_batch_size, input_shape):
     while 1:
-        num_lines = len(data)
-        pr_threshold = 0.5
-        for i_batch in range(batch_size):
-            i_line = np.random.randint(num_lines)
-            line_data = data[i_line]
-
-            keep_pr = 0
-            while keep_pr == 0:
-                x,y = preprocess_image_file_train(line_data, path)
-                pr_unif = np.random
-                if abs(y)<.1:
-                    pr_val = np.random.uniform()
-                    if pr_val>pr_threshold:
-                        keep_pr = 1
-                else:
-                    keep_pr = 1
+        f = open(path + file_name)
+        i = 0
+        input_batch = np.empty((batch_size, input_shape[0], input_shape[1], input_shape[2]))
+        output_batch = np.empty((batch_size))
+        for line in f:
+            images, angles = process_line(line, path, mini_batch_size, input_shape[0], input_shape[1], input_shape[2])
             
-            input_batch[i_batch] = x
-            output_batch[i_batch] = y
-        yield input_batch, output_batch
+            input_batch[i:i+mini_batch_size] = images
+            output_batch[i:i+mini_batch_size] = angles
+    
+            if (i >= batch_size-mini_batch_size):
+                yield (input_batch, output_batch)
+                i = 0
+            else:
+                i += mini_batch_size
+
+        f.close()
 
 flags = tf.app.flags
 FLAGS = flags.FLAGS
@@ -164,17 +122,19 @@ flags.DEFINE_string('training_file', 'driving_log.csv.training', "Features train
 flags.DEFINE_string('validation_file', 'driving_log.csv.validation', "Features validation file (.csv)")
 flags.DEFINE_integer('epochs', 5, "The number of epochs.")
 flags.DEFINE_integer('batch_size', 64, "The batch size.")
+flags.DEFINE_integer('mini_batch_size', 8, "The mini batch size.")
 flags.DEFINE_float('learning_rate', 0.001, "The learning rate.")
 flags.DEFINE_integer('batch_multiple', 60, "The batch multiple.")
 
 def main(_):
     
     # define model
-    input_shape = (160,320,3)
+    input_shape = (64,64,3)
+    mini_batch_size = 8
     
     model = Sequential()
     
-    model.add(Convolution2D(24, 5, 5, border_mode='valid', input_shape=(new_size_col,new_size_row,3)))
+    model.add(Convolution2D(24, 5, 5, border_mode='valid', input_shape=input_shape))
     model.add(Convolution2D(36, 5, 5, border_mode='valid'))
     model.add(Convolution2D(48, 5, 5, border_mode='valid'))
     model.add(Convolution2D(64, 3, 3, border_mode='valid'))
@@ -191,21 +151,13 @@ def main(_):
     model.add(Dense(1, activation='linear'))
     
     adam = Adam(lr=FLAGS.learning_rate)
-    model.compile(optimizer=adam, loss='mse', metrics=['accuracy'])
+    model.compile(optimizer=adam, loss='mse')
 
-    training_samples_count = FLAGS.batch_size * FLAGS.batch_multiple
-
-    f = open(FLAGS.training_path + FLAGS.training_file)
-    training_samples = f.readlines()
-    f.close()
-
-    f = open(FLAGS.training_path + FLAGS.validation_file)
-    validation_samples = f.readlines()
-    f.close()
+    training_samples = FLAGS.batch_size * FLAGS.mini_batch_size * FLAGS.batch_multiple
     
-    model.fit_generator(generate_batch_from_file(FLAGS.training_path, training_samples, FLAGS.batch_size, input_shape),
-                        samples_per_epoch=training_samples_count, nb_epoch=FLAGS.epochs, nb_val_samples=training_samples_count/5,
-                        validation_data=generate_batch_from_file(FLAGS.training_path, validation_samples, FLAGS.batch_size, input_shape))
+    model.fit_generator(generate_batch_from_file(FLAGS.training_path, FLAGS.training_file, FLAGS.batch_size, FLAGS.mini_batch_size, input_shape),
+                        samples_per_epoch=training_samples, nb_epoch=FLAGS.epochs, nb_val_samples=training_samples/5,
+                        validation_data=generate_batch_from_file(FLAGS.training_path, FLAGS.validation_file, FLAGS.batch_size, FLAGS.mini_batch_size, input_shape))
 
     model.save('model.h5')
 
