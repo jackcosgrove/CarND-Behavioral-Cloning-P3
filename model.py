@@ -1,3 +1,4 @@
+from random import shuffle
 import tensorflow as tf
 import numpy as np
 import matplotlib.image as mpimg
@@ -93,13 +94,13 @@ def process_line(line, path, mini_batch_size, y_dim, x_dim, z_dim, angle_adjust_
     
     return images, angles
 
-def generate_batch_from_file(path, file_name, batch_size, mini_batch_size, input_shape):
+def generate_batch_from_file(data, batch_size, mini_batch_size, input_shape):
+    shuffle(data)
     while 1:
-        f = open(path + file_name)
         i = 0
         input_batch = np.empty((batch_size, input_shape[0], input_shape[1], input_shape[2]))
         output_batch = np.empty((batch_size))
-        for line in f:
+        for line in data:
             images, angles = process_line(line, path, mini_batch_size, input_shape[0], input_shape[1], input_shape[2])
             
             input_batch[i:i+mini_batch_size] = images
@@ -110,8 +111,6 @@ def generate_batch_from_file(path, file_name, batch_size, mini_batch_size, input
                 i = 0
             else:
                 i += mini_batch_size
-
-        f.close()
 
 flags = tf.app.flags
 FLAGS = flags.FLAGS
@@ -124,7 +123,6 @@ flags.DEFINE_integer('epochs', 5, "The number of epochs.")
 flags.DEFINE_integer('batch_size', 64, "The batch size.")
 flags.DEFINE_integer('mini_batch_size', 4, "The mini batch size.")
 flags.DEFINE_float('learning_rate', 0.001, "The learning rate.")
-flags.DEFINE_integer('batch_multiple', 60, "The batch multiple.")
 
 def main(_):
     
@@ -150,11 +148,19 @@ def main(_):
     adam = Adam(lr=FLAGS.learning_rate)
     model.compile(optimizer=adam, loss='mse', metrics = ['accuracy'])
 
-    training_samples = FLAGS.batch_size * FLAGS.mini_batch_size * FLAGS.batch_multiple
+    f = open(FLAGS.training_path + FLAGS.training_file)
+    training_data = f.readlines()
+    f.close()
+
+    f = open(FLAGS.training_path + FLAGS.validation_file)
+    validation_data = f.readlines()
+    f.close()
+
+    training_samples = int(len(training_data) / FLAGS.batch_size) * FLAGS.batch_size * FLAGS.mini_batch_size
     
-    model.fit_generator(generate_batch_from_file(FLAGS.training_path, FLAGS.training_file, FLAGS.batch_size, FLAGS.mini_batch_size, input_shape),
-                        samples_per_epoch=training_samples, nb_epoch=FLAGS.epochs, nb_val_samples=training_samples/5,
-                        validation_data=generate_batch_from_file(FLAGS.training_path, FLAGS.validation_file, FLAGS.batch_size, FLAGS.mini_batch_size, input_shape))
+    model.fit_generator(generate_batch_from_file(training_data, FLAGS.batch_size, FLAGS.mini_batch_size, input_shape),
+                        samples_per_epoch=training_samples, nb_epoch=FLAGS.epochs, nb_val_samples=int(training_samples/5),
+                        validation_data=generate_batch_from_file(validation_data, FLAGS.batch_size, FLAGS.mini_batch_size, input_shape))
 
     model.save('model.h5')
 
