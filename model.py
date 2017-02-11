@@ -50,11 +50,11 @@ def add_random_shadow(image, y_dim, x_dim):
 
     return image
 
-def process_line(line, path, mini_batch_size, y_dim, x_dim, z_dim, angle_adjust_left = 0.25, angle_adjust_right = -0.25):
+def process_line(line, mini_batch_size, y_dim, x_dim, z_dim, angle_adjust_left = 0.25, angle_adjust_right = -0.25):
     tokens = line.split(',')
-    center = mpimg.imread(path + tokens[0].strip())
-    left = mpimg.imread(path + tokens[1].strip())
-    right = mpimg.imread(path + tokens[2].strip())
+    center = mpimg.imread(tokens[0].strip())
+    left = mpimg.imread(tokens[1].strip())
+    right = mpimg.imread(tokens[2].strip())
 
     #Resize the images
     center = cv2.resize(center, (y_dim,x_dim))
@@ -94,14 +94,14 @@ def process_line(line, path, mini_batch_size, y_dim, x_dim, z_dim, angle_adjust_
     
     return images, angles
 
-def generate_batch_from_file(data, path, batch_size, mini_batch_size, input_shape):
+def generate_batch_from_file(data, batch_size, mini_batch_size, input_shape):
     shuffle(data)
     while 1:
         i = 0
         input_batch = np.empty((batch_size, input_shape[0], input_shape[1], input_shape[2]))
         output_batch = np.empty((batch_size))
         for line in data:
-            images, angles = process_line(line, path, mini_batch_size, input_shape[0], input_shape[1], input_shape[2])
+            images, angles = process_line(line, mini_batch_size, input_shape[0], input_shape[1], input_shape[2])
             
             input_batch[i:i+mini_batch_size] = images
             output_batch[i:i+mini_batch_size] = angles
@@ -158,9 +158,9 @@ def main(_):
 
     training_samples = int(len(training_data) / FLAGS.batch_size) * FLAGS.batch_size * FLAGS.mini_batch_size
     
-    model.fit_generator(generate_batch_from_file(training_data, FLAGS.training_path, FLAGS.batch_size, FLAGS.mini_batch_size, input_shape),
+    model.fit_generator(generate_batch_from_file(training_data, FLAGS.batch_size, FLAGS.mini_batch_size, input_shape),
                         samples_per_epoch=training_samples, nb_epoch=FLAGS.epochs, nb_val_samples=int(training_samples/5),
-                        validation_data=generate_batch_from_file(validation_data, FLAGS.training_path, FLAGS.batch_size, FLAGS.mini_batch_size, input_shape))
+                        validation_data=generate_batch_from_file(validation_data, FLAGS.batch_size, FLAGS.mini_batch_size, input_shape))
 
     model.save('model.h5')
 
