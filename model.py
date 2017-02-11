@@ -118,8 +118,8 @@ FLAGS = flags.FLAGS
 
 # command line flags
 flags.DEFINE_string('training_path', 'training/', "Features training path")
-flags.DEFINE_string('training_file', 'driving_log.csv.training', "Features training file (.csv)")
-flags.DEFINE_string('validation_file', 'driving_log.csv.validation', "Features validation file (.csv)")
+flags.DEFINE_string('training_file', 'driving_log.training.csv', "Features training file (.csv)")
+flags.DEFINE_string('validation_file', 'driving_log.validation.csv', "Features validation file (.csv)")
 flags.DEFINE_integer('epochs', 5, "The number of epochs.")
 flags.DEFINE_integer('batch_size', 64, "The batch size.")
 flags.DEFINE_integer('mini_batch_size', 8, "The mini batch size.")
