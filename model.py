@@ -52,45 +52,37 @@ def add_random_shadow(image, y_dim, x_dim):
 def process_line(line, mini_batch_size, y_dim, x_dim, z_dim, angle_adjust_left = 0.25, angle_adjust_right = -0.25):
     tokens = line.split(',')
 
-    image_index = np.random.randint(3)
-
-    image = mpimg.imread(tokens[image_index].strip())
-    #left = mpimg.imread(tokens[1].strip())
-    #right = mpimg.imread(tokens[2].strip())
+    center = mpimg.imread(tokens[0].strip())
+    left = mpimg.imread(tokens[1].strip())
+    right = mpimg.imread(tokens[2].strip())
 
     #Resize the images
-    image= cv2.resize(image, (y_dim,x_dim))
-    #left = cv2.resize(left, (y_dim,x_dim))
-    #right = cv2.resize(right, (y_dim,x_dim))
+    center = cv2.resize(center, (y_dim,x_dim))
+    left = cv2.resize(left, (y_dim,x_dim))
+    right = cv2.resize(right, (y_dim,x_dim))
 
     angle = float(tokens[3].strip())
-    if image_index == 1:
-        angle += angle_adjust_left
-    elif image_index == 2:
-        angle += angle_adjust_right
 
     images = np.empty((mini_batch_size, y_dim, x_dim, z_dim), dtype=np.float32)
     angles = np.empty((mini_batch_size), dtype=np.float32)
 
-#    images[0] = center
-#    images[1] = left
-#    images[2] = right
+    images[0] = center
+    images[1] = left
+    images[2] = right
 
-#    angles[0] = angle
-#    angles[1] = angle + angle_adjust_left
-#    angles[2] = angle + angle_adjust_right
+    angles[0] = angle
+    angles[1] = angle + angle_adjust_left
+    angles[2] = angle + angle_adjust_right
 
-    image = augment_brightness_camera_images(image)
-    images[0], angles[0] = image, angle #translate_image(image, angle, 100, y_dim, x_dim)
 #    images[3], angles[3] = translate_image(images[0].copy(),angles[0],100, y_dim, x_dim)
 #    images[4], angles[4] = translate_image(images[1].copy(),angles[1],100, y_dim, x_dim)
 #    images[5], angles[5] = translate_image(images[2].copy(),angles[2],100, y_dim, x_dim)
 
 #    images[6] = add_random_shadow(images[0].copy(), y_dim, x_dim)
-#    images[3] = augment_brightness_camera_images(images[0].copy())
+    images[3] = augment_brightness_camera_images(images[0].copy())
 
 #    angles[6] = angle
-#    angles[3] = angle
+    angles[3] = angle
 
     for i in range(mini_batch_size):
         # Normalize the images
@@ -108,18 +100,18 @@ def generate_batch_from_file(data, batch_size, mini_batch_size, angle_augmentati
         input_batch = np.empty((batch_size, input_shape[0], input_shape[1], input_shape[2]))
         output_batch = np.empty((batch_size))
         data_len = len(data)
-        for j in range(batch_size * mini_batch_size):
+        for j in range(batch_size):
             line_index = np.random.randint(data_len)
-            images, angles = process_line(data[line_index], 1, input_shape[0], input_shape[1], input_shape[2])
+            images, angles = process_line(data[line_index], mini_batch_size, input_shape[0], input_shape[1], input_shape[2])
             
-            input_batch[i] = images
-            output_batch[i] = angles * angle_augmentation
+            input_batch[i:i+mini_batch_size] = images
+            output_batch[i:i+mini_batch_size] = angles * angle_augmentation
     
-            if (i >= batch_size-1):
+            if (i >= batch_size-mini_batch_size):
                 yield (input_batch, output_batch)
                 i = 0
             else:
-                i += 1 #mini_batch_size
+                i += mini_batch_size
 
 flags = tf.app.flags
 FLAGS = flags.FLAGS
