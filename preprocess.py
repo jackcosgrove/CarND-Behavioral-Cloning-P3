@@ -36,13 +36,13 @@ smooth("slalom", r, w)
 r.close()
 w.close()
 
-r = open("curves/driving_log.csv", "r")
-w = open("curves/driving_log.smoothed.csv", "w")
+#r = open("curves/driving_log.csv", "r")
+#w = open("curves/driving_log.smoothed.csv", "w")
 
-smooth("curves", r, w)
+#smooth("curves", r, w)
 
-r.close()
-w.close()
+#r.close()
+#w.close()
 
 def filter_slalom(r, w):
     turning_left = []
@@ -77,6 +77,47 @@ filter_slalom(r, w)
 r.close()
 w.close()
 
+def bin_index(value, bins):
+    if value < bins[0]:
+        return 0
+    if value >= bins[-1]:
+        return len(bins)-1 
+    for i in range(len(bins)-1):
+        if value >= bins[i] and value < bins[i+1]:
+            return i
+        
+    
+def distribute(data, w):
+    data_len = len(data)
+    angles = np.empty(data_len)
+    for i in range(data_len):
+        tokens = data[i].split(',')
+        angles[i] = float(tokens[3].strip())
+
+    hist, bins = np.histogram(angles, bins=50)
+    bin_counts = np.zeros(51, dtype=np.int)
+
+    total_samples = 100 * 51
+    i = 0
+    while i < total_samples:
+        line = data[np.random.randint(data_len)]
+        tokens = line.split(',')
+        angle = float(tokens[3].strip())
+        idx = bin_index(angle, bins)
+        if bin_counts[idx] < 100:
+            i += 1
+            bin_counts[idx] += 1
+            w.write(line)
+
+r = open("slalom/driving_log.filtered.csv", "r")
+w = open("slalom/driving_log.distributed.csv", "w")
+
+data = r.readlines()
+distribute(data, w)
+
+r.close()
+w.close()
+
 def split(r, t, v):
     for line in r:
         i = np.random.randint(4)
@@ -86,16 +127,16 @@ def split(r, t, v):
             t.write(line)
 
 
-s = open("slalom/driving_log.filtered.csv", "r")
-c = open("curves/driving_log.smoothed.csv", "r")
+s = open("slalom/driving_log.distributed.csv", "r")
+#c = open("curves/driving_log.smoothed.csv", "r")
 
 t = open("training/driving_log.training.csv", "w")
 v = open("training/driving_log.validation.csv", "w")
 
 split(s, t, v)
-split(c, t, v)
+#split(c, t, v)
 
 s.close()
-c.close()
+#c.close()
 t.close()
 v.close()
