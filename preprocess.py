@@ -1,3 +1,4 @@
+import os
 import numpy as np
 
 def make_file_name_relative(file_name):
@@ -58,6 +59,13 @@ for line in lines:
                     w.write(turning_left[i])
                 turning_left = []
         turning_right.append(line)
+    else:
+        if os.path.isfile(tokens[0]):
+            os.remove(tokens[0])
+        if os.path.isfile(tokens[1]):
+            os.remove(tokens[1])
+        if os.path.isfile(tokens[2]):
+            os.remove(tokens[2])
 
 r.close()
 w.close()

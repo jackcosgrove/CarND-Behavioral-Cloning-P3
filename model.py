@@ -73,15 +73,15 @@ def process_line(line, path, mini_batch_size, y_dim, x_dim, z_dim, angle_adjust_
     angles[1] = angle + angle_adjust_left
     angles[2] = angle + angle_adjust_right
 
-    images[3], angles[3] = translate_image(images[0].copy(),angles[0],100, y_dim, x_dim)
-    images[4], angles[4] = translate_image(images[1].copy(),angles[1],100, y_dim, x_dim)
-    images[5], angles[5] = translate_image(images[2].copy(),angles[2],100, y_dim, x_dim)
+ #   images[3], angles[3] = translate_image(images[0].copy(),angles[0],100, y_dim, x_dim)
+#    images[4], angles[4] = translate_image(images[1].copy(),angles[1],100, y_dim, x_dim)
+#    images[5], angles[5] = translate_image(images[2].copy(),angles[2],100, y_dim, x_dim)
 
-    images[6] = add_random_shadow(images[0].copy(), y_dim, x_dim)
-    images[7] = augment_brightness_camera_images(images[0].copy())
+    #images[6] = add_random_shadow(images[0].copy(), y_dim, x_dim)
+    images[3] = augment_brightness_camera_images(images[0].copy())
 
-    angles[6] = angle
-    angles[7] = angle
+ #   angles[6] = angle
+    angles[3] = angle
 
     for i in range(mini_batch_size):
         # Normalize the images
@@ -122,7 +122,7 @@ flags.DEFINE_string('training_file', 'driving_log.training.csv', "Features train
 flags.DEFINE_string('validation_file', 'driving_log.validation.csv', "Features validation file (.csv)")
 flags.DEFINE_integer('epochs', 5, "The number of epochs.")
 flags.DEFINE_integer('batch_size', 64, "The batch size.")
-flags.DEFINE_integer('mini_batch_size', 8, "The mini batch size.")
+flags.DEFINE_integer('mini_batch_size', 4, "The mini batch size.")
 flags.DEFINE_float('learning_rate', 0.001, "The learning rate.")
 flags.DEFINE_integer('batch_multiple', 60, "The batch multiple.")
 
@@ -130,14 +130,11 @@ def main(_):
     
     # define model
     input_shape = (64,64,3)
-    mini_batch_size = 8
     
     model = Sequential()
     
-    model.add(Convolution2D(24, 5, 5, border_mode='valid', input_shape=input_shape))
-    model.add(Convolution2D(36, 5, 5, border_mode='valid'))
-    model.add(Convolution2D(48, 5, 5, border_mode='valid'))
-    model.add(Convolution2D(64, 3, 3, border_mode='valid'))
+    model.add(Convolution2D(8, 4, 4, border_mode='valid', input_shape=input_shape))
+    model.add(Convolution2D(16, 4, 4, border_mode='valid'))
 
     model.add(Flatten())
 
@@ -151,7 +148,7 @@ def main(_):
     model.add(Dense(1, activation='linear'))
     
     adam = Adam(lr=FLAGS.learning_rate)
-    model.compile(optimizer=adam, loss='mse')
+    model.compile(optimizer=adam, loss='mse', metrics = ['accuracy'])
 
     training_samples = FLAGS.batch_size * FLAGS.mini_batch_size * FLAGS.batch_multiple
     
