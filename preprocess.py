@@ -8,7 +8,7 @@ def make_file_name_relative(file_name):
 r = open("training/driving_log.csv", "r")
 w = open("training/driving_log.smoothed.csv", "w")
 
-window_size = 12.0
+window_size = 6.0
 lag_index = int(window_size / 2)
 window = []
 win_len = 0
@@ -59,13 +59,6 @@ for line in lines:
                     w.write(turning_left[i])
                 turning_left = []
         turning_right.append(line)
-    else:
-        if os.path.isfile(tokens[0]):
-            os.remove(tokens[0])
-        if os.path.isfile(tokens[1]):
-            os.remove(tokens[1])
-        if os.path.isfile(tokens[2]):
-            os.remove(tokens[2])
 
 r.close()
 w.close()
