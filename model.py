@@ -94,7 +94,7 @@ def process_line(line, path, mini_batch_size, y_dim, x_dim, z_dim, angle_adjust_
     
     return images, angles
 
-def generate_batch_from_file(data, batch_size, mini_batch_size, input_shape):
+def generate_batch_from_file(data, path, batch_size, mini_batch_size, input_shape):
     shuffle(data)
     while 1:
         i = 0
@@ -158,9 +158,9 @@ def main(_):
 
     training_samples = int(len(training_data) / FLAGS.batch_size) * FLAGS.batch_size * FLAGS.mini_batch_size
     
-    model.fit_generator(generate_batch_from_file(training_data, FLAGS.batch_size, FLAGS.mini_batch_size, input_shape),
+    model.fit_generator(generate_batch_from_file(training_data, FLAGS.training_path, FLAGS.batch_size, FLAGS.mini_batch_size, input_shape),
                         samples_per_epoch=training_samples, nb_epoch=FLAGS.epochs, nb_val_samples=int(training_samples/5),
-                        validation_data=generate_batch_from_file(validation_data, FLAGS.batch_size, FLAGS.mini_batch_size, input_shape))
+                        validation_data=generate_batch_from_file(validation_data, FLAGS.training_path, FLAGS.batch_size, FLAGS.mini_batch_size, input_shape))
 
     model.save('model.h5')
 
