@@ -14,7 +14,7 @@ def smooth(path, r, w):
     i = 0
     for line in lines:
         tokens = line.split(',')
-        angle = float(tokens[3].strip()) * 2.0
+        angle = float(tokens[3].strip())
         window.append(angle)
         win_len = len(window)
         if win_len > window_size:
@@ -56,7 +56,7 @@ def filter_slalom(r, w):
             if len(turning_left) == 0:
                 right_len = len(turning_right)
                 if right_len > 0:
-                    for i in range(int(right_len / 2)):
+                    for i in range(int(right_len / 3)):
                         w.write(turning_right[i])
                     turning_right = []
             turning_left.append(line)
@@ -64,7 +64,7 @@ def filter_slalom(r, w):
             if len(turning_right) == 0:
                 left_len = len(turning_left)
                 if left_len > 0:
-                    for i in range(int(left_len / 2)):
+                    for i in range(int(left_len / 3)):
                         w.write(turning_left[i])
                     turning_left = []
             turning_right.append(line)
