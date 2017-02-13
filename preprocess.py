@@ -23,7 +23,8 @@ def smooth(r, w):
     for line in lines:
         tokens = line.split(',')
         angle = float(tokens[3].strip())
-        window.append(angle)
+        if angle < -0.2 or angle > 0.2:
+            window.append(angle)
         win_len = len(window)
         if win_len > window_size:
             window.pop(0)
@@ -33,7 +34,7 @@ def smooth(r, w):
             w.write(str.join(',', tokens))
         i += 1
 
-r = open("slalom/driving_log.csv", "r")
+r = open("careful/driving_log.csv", "r")
 w = open("slalom/driving_log.smoothed.csv", "w")
 
 smooth(r, w)
@@ -130,7 +131,7 @@ r = open("slalom/driving_log.filtered.csv", "r")
 w = open("slalom/driving_log.distributed.csv", "w")
 
 data = r.readlines()
-distribute(data, w)
+#distribute(data, w)
 
 r.close()
 w.close()
@@ -172,7 +173,7 @@ def split(path, destination, r, t, v):
             t.write(make_file_names_relative(path, line))
 
 
-s = open("slalom/driving_log.distributed.csv", "r")
+s = open("slalom/driving_log.smoothed.csv", "r")
 #c = open("curves/driving_log.smoothed.csv", "r")
 
 t = open("training/driving_log.training.csv", "w")

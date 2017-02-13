@@ -19,6 +19,19 @@ app = Flask(__name__)
 model = None
 prev_image_array = None
 
+def crop_image(image):
+    height, width, depth = image.shape
+    # Remove the sky
+    bottom = int(height / 4.0)
+    # Remove the hood and dashboard
+    top = int(height / 8.0) * 7
+    return image[bottom:top, 0:width]
+    
+def scale_image(image):
+    return cv2.resize(image, (64,64))
+
+def normalize_image(image):
+    return image / 255. - 0.5
 
 @sio.on('telemetry')
 def telemetry(sid, data):
@@ -34,7 +47,7 @@ def telemetry(sid, data):
         
         image = Image.open(BytesIO(base64.b64decode(imgString)))
         image_array = np.asarray(image)
-        image_array = (cv2.resize(image_array, (64,64)) - 127.0) / 255.0
+        image_array = normalize_image(scale_image(crop_image(image_array)))
         steering_angle = float(model.predict(image_array[None, :, :, :], batch_size=1))
         throttle = 0.2
         print(steering_angle, throttle)
