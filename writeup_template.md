@@ -19,6 +19,7 @@
 [image2]: ./examples/udacity_hist.png "Udacity Steering Histogram"
 [image3]: ./examples/forward_hist.png "Forward Steering Histogram"
 [image4]: ./examples/reverse_hist.png "Reverse Steering Histogram"
+[image5]: ./examples/model_shapes.png "Model Diagram"
 
 ## Rubric Points
 ###Here I will consider the [rubric points](https://review.udacity.com/#!/rubrics/432/view) individually and describe how I addressed each point in my implementation.  
@@ -47,7 +48,7 @@ The model.py file contains the code for training and saving the convolution neur
 
 ###Model Architecture and Training Strategy
 
-####1. An appropriate model arcthiecture has been employed
+####1. An appropriate model architecture has been employed
 
 My model consists of a convolutional neural network with 3x3 filter sizes and depths between 32, 64, and 128 (model.py lines 252-262) Each convolutional layer is followed by a max pooling layer with a 2x2 filter size. These are then followed by a dropout layer which drops out 50% of the features.
 
@@ -97,21 +98,23 @@ Amazingly, my model made it all the way to the top of the second course on its f
 
 ####2. Final Model Architecture
 
-The final model architecture (model.py lines 252-273) is the same as what is described above. Once I had good data the model worked fine.
+The final model architecture (model.py lines 252-273) can be seen also in Figure 1.
+
+![Figure 1: Model Architecture][image5]
 
 ####3. Creation of the Training Set & Training Process
 
 I started using the Udacity data set. I plotted the steering angles in a histogram and noticed that while the data were evenly distributed, there were few outliers. Simulations trained using the Udacity data set would consistently miss the first curve. The car would not turn hard enough because the steering angles in the data set were too soft.
 
-![Figure 1][image2]
+![Figure 2][image2]
 
 To capture more extreme driving behavior, I first recorded three laps on track one using center lane driving. The outliers were introduced by my game controller's sensitivity and my own gracelessness. I plotted a histogram of this data and noticed that it favored left turns, which is understandable given the counterclockwise driving direction.
 
-![Figure 2][image3]
+![Figure 3][image3]
 
 I then recorded two laps driving the course in reverse to balance out the steering angle.
 
-![Figure 3][image4]
+![Figure 4][image4]
 
 I tried slaloming through the course and removing the parts of each slalom where I drifted from the center to the edge to train the network to correct course, however this data was bad and caused worse performance. In the end, my own clumsiness while driving introduced enough corrective data. The drifting from the center was more than offset by the majority of data points where I stayed in the center, while the steering angles at the edge of the road were mostly corrective.
 
@@ -121,7 +124,7 @@ To augment the data set, I used a number of techniques described [here](https://
 
 Here are examples of the various augmentations I used, along with a composite image. Every image trained upon was composited in this way, with the various augmentations randomly generated.
 
-![Figure 4: Augmentation Techniques][image1]
+![Figure 5: Augmentation Techniques][image1]
 
 I used all three images per measurement, and offset the left and right images' steering angles by 0.25. I obtained this number from the link above.
 
